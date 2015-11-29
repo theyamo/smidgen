@@ -22,7 +22,7 @@ import std.algorithm: map, startsWith;
 import std.uni : isAlpha;
 import std.array;
 import std.conv;
-import std.range: equal;
+import std.algorithm: equal;
 import std.string: strip;
 import std.typetuple;
 import std.uni: isAlpha;
@@ -2601,7 +2601,7 @@ alias named!(literal!"/", "slash") slash; /// A parser recognizing '/'
 alias named!(literal!"\\", "backslash") backslash; /// A parser recognizing '\'
 alias named!(literal!"'", "quote") quote; /// A parser recognizing ' (single quote)
 alias named!(literal!"\"", "doublequote") doublequote; /// A parser recognizing " (double quote)
-alias named!(literal!"`", "backquote") backquote; /// A parser recognizing ` (backquote)
+alias named!(literal!"`", "backquote") backquote; /// A parser recognizing $(BACKTICK) (backquote)
 
 /// A list of elem's separated by sep's. One element minimum.
 template list(alias elem, alias sep)

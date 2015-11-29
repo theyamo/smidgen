@@ -27,10 +27,18 @@ string getClassName(string baseClassName, void* wrappedObj) {
 	return to!string(getClassNameC(baseClassNameZ, wrappedObj));
 }
 
+version(X86) {
+	alias ptr_t = uint;
+}
+version(X86_64) {
+	alias ptr_t = ulong;
+}
+
+
 static if (true) {
 	// Check that the mapping of pointer to ulong is valid on this platform
 	alias void* pvoid;
-	static assert(ulong.sizeof == pvoid.sizeof);
+	static assert(ptr_t.sizeof == pvoid.sizeof);
 }
 
 // Object[void*]
@@ -39,7 +47,7 @@ static if (true) {
 * We use ulong here to avoid the garbage collector knowing that these are pointers.
 * We also have to munge the points (using ~) to fool the GC.
 */
-static ulong[ulong] wrappedObjectsToDWrapper;
+static ptr_t[ptr_t] wrappedObjectsToDWrapper;
 
 /**
 * Return the number of wrapped objects - only used in tests
@@ -48,12 +56,12 @@ size_t getNumWrappedObjects() {
 	return wrappedObjectsToDWrapper.values.filter!(a => a != 0).count;
 }
 
-ulong makeHiddenAddress(Object dObj) {
+ptr_t makeHiddenAddress(Object dObj) {
 	void* address = cast(void*) dObj;
-	return ~ (cast(ulong) address) ;
+	return ~ (cast(ptr_t) address) ;
 }
 
-Object getObject(ulong hiddenAddress) {
+Object getObject(ptr_t hiddenAddress) {
 	void* objPointer = cast(void*) (~hiddenAddress);
 	return cast(Object) objPointer;
 }
@@ -65,13 +73,13 @@ void registerWrappedObj(Object dObj, void* wrappedObj) {
 	debug { 
 		writeln("Register wrapped obj CPP %x D %s &D wrapper %x ".format(wrappedObj, dObj, cast(void*) dObj)); stdout.flush();
 		foreach (key, ref val; wrappedObjectsToDWrapper) {
-			if (val == cast(ulong) (cast(void*) dObj)) {
+			if (val == cast(ptr_t) (cast(void*) dObj)) {
 				throw new Exception("That D object already wraps CPP %x!".format(key));
 			}
 		}
 	}
 
-	wrappedObjectsToDWrapper[cast(ulong) wrappedObj] = makeHiddenAddress(dObj);
+	wrappedObjectsToDWrapper[cast(ptr_t) wrappedObj] = makeHiddenAddress(dObj);
 }
 
 /**
@@ -79,7 +87,7 @@ void registerWrappedObj(Object dObj, void* wrappedObj) {
 */
 Object getWrapper(void* wrappedObj) {
 //	debug { writeln("getWrapper for CPP %x".format(wrappedObj)); stdout.flush();}
-	Object obj = getObject(wrappedObjectsToDWrapper[cast(ulong) wrappedObj]);
+	Object obj = getObject(wrappedObjectsToDWrapper[cast(ptr_t) wrappedObj]);
 //	debug { writeln("wrapper is %s, %x".format(obj, cast(void*) obj)); stdout.flush();}
 	return obj;
 }
@@ -88,10 +96,10 @@ Object getWrapper(void* wrappedObj) {
 * Return if there is a known D wrapper for this CPP object
 */ 
 bool hasWrapper(void* wrappedObj) {
-	bool res = ((cast(ulong) (cast(void*) wrappedObj)) in wrappedObjectsToDWrapper) != null;
+	bool res = ((cast(ptr_t) (cast(void*) wrappedObj)) in wrappedObjectsToDWrapper) != null;
 	if (res) {
-		if (wrappedObjectsToDWrapper[cast (ulong) wrappedObj] == 0) {
-			wrappedObjectsToDWrapper.remove(cast(ulong) wrappedObj);
+		if (wrappedObjectsToDWrapper[cast (ptr_t) wrappedObj] == 0) {
+			wrappedObjectsToDWrapper.remove(cast(ptr_t) wrappedObj);
 			res = false;
 		}
 	}	
@@ -107,7 +115,7 @@ bool hasWrapper(void* wrappedObj) {
 void deregisterWrappedObj(void* wrappedObj) {
 	if (WrappedObject.getSystemExiting) return;
 	debug { writeln("remove wrappedobj from D registry");stdout.flush();}
-	wrappedObjectsToDWrapper[cast(ulong) (cast(void*) wrappedObj)] = 0;
+	wrappedObjectsToDWrapper[cast(ptr_t) (cast(void*) wrappedObj)] = 0;
 		// we can't remove it here if called from gc because removing from
 		// an AA triggers a gc and gc is not reenterable
 //		wrappedObjectsToDWrapper.remove(wrappedObj);

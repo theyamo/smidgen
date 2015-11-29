@@ -8,9 +8,9 @@
 #include <polygon.h>
 
 // Headers for converters
+
 using namespace std;
 #include <string>
-
 
 // Externs for converters
 extern char* convertPCharToPChar(char* toConvert);
